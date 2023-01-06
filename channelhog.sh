@@ -334,6 +334,7 @@ EOF
 				    logger -st ChannelHog "[*] Channel (${currentChan}) can't switch back yet as still in Non-Occupancy Period."
 				else
 				    logger -st ChannelHog "[*] Channel has changed from ${targetChan} to ${currentChan}. Restarting WiFi."
+				    logger -p syslog.alert "[*] Channel has changed from ${targetChan} to ${currentChan}. Restarting WiFi."
 				    service restart_wireless
 				fi
 			    fi          
