@@ -351,7 +351,7 @@ EOF
 
 	update)
 		Check_Lock "$@"
-		remotedir="https://raw.githubusercontent.com/Adamm00/ChannelHog/master"
+		remotedir="https://raw.githubusercontent.com/Mikiya83/ChannelHog/master"
 		localver="$(Filter_Version < "$0")"
 		remotever="$(curl -fsL --retry 3 --connect-timeout 3 "${remotedir}/channelhog.sh" | Filter_Version)"
 		localmd5="$(md5sum "$0" | awk '{print $1}')"
