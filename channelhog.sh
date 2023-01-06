@@ -242,16 +242,102 @@ case "$1" in
 EOF
 							)" "$webhookurl"
 			fi
-			logger -st ChannelHog "[*] $currentbandwidth Channel Width Detected - Restarting ${restartradio} Radio"
-			if [ "$restart5ghz1" = "true" ]; then
-				wl -i "$port5ghz1" down
-				wl -i "$port5ghz1" up
+
+			#Check log for 'Radar detected' and 'wl_chanspec_changed_action' before wifi is taken Up/Down.
+			lastRadarFoundLine="$(grep "Radar detected" /tmp/syslog.log | tail -1)"
+			lastChanChangeLine="$(grep "wl_chanspec_changed_action" /tmp/syslog.log | tail -1)"
+
+			if [ "$restart5ghz1" = "true" ]; then  
+			    logger -st ChannelHog "[*] $currentbandwidth Channel Width Detected - Restarting ${restartradio} Radio"
+			    wl -i "$port5ghz1" down
+			    wl -i "$port5ghz1" up
 			fi
 			if [ "$restart5ghz2" = "true" ]; then
-				wl -i "$port5ghz2" down
-				wl -i "$port5ghz2" up
+			    logger -st ChannelHog "[*] $currentbandwidth Channel Width Detected - Restarting ${restartradio} Radio"
+			    wl -i "$port5ghz2" down
+			    wl -i "$port5ghz2" up
 			fi
 
+			#After down/up event
+			#Get targeted and current WIFI channel
+			#Currently only checks $port5ghz1.
+
+			targetChanSpec="$(nvram get wl1_chanspec)"
+			targetChan=${targetChanSpec%/*}
+			currentChanSpec="$(wl -i $port5ghz1 chanspec | awk '{print $1}')"
+			currentChan=${currentChanSpec%/*}
+
+			#Nested Function to get event time from log file
+			Get_ChanChange_Time () {
+			    local lastEventFoundLine="$1"
+			    if [ ! -z "$lastEventFoundLine" ]; then
+				#Parse date from last event detected log line
+				local lastEventFoundY="$(date +"%Y")"
+				local lastEventFoundM="$(echo $lastEventFoundLine | awk '{print $1}')"              
+				case $lastEventFoundM in
+				    Jan) MON="01" ;;
+				    Feb) MON="02" ;;
+				    Mar) MON="03" ;;
+				    Apr) MON="04" ;;
+				    May) MON="05" ;;
+				    Jun) MON="06" ;;
+				    Jul) MON="07" ;;
+				    Aug) MON="08" ;;
+				    Sep) MON="09" ;;
+				    Oct) MON="10" ;;
+				    Nov) MON="11" ;;
+				    Dec) MON="12" ;;
+				esac  
+				local lastEventFoundM=$MON
+				local lastEventFoundD="$(echo $lastEventFoundLine | awk '{print $2}')"
+				local lastEventFoundT="$(echo $lastEventFoundLine | awk '{print $3}')"  
+				local lastEventFoundCombined="$(date +%s -d "$(echo $lastEventFoundY"."$lastEventFoundM"."$lastEventFoundD"-"$lastEventFoundT)")"
+
+				#No year is listed in log so apply current year as a work-around. If combined found date is greater than current date then change year to previous year.
+				local currentTime=$(date +%s)          
+				if [ "$lastEventFoundCombined" -gt "$currentTime" ]; then
+				    local lastEventFoundPY=$((lastEventFoundY-1))
+				    local lastEventFoundCombinedPY="$(date +%s -d "$(echo $lastEventFoundPY"."$lastEventFoundM"."$lastEventFoundD"-"$lastEventFoundT)")"
+				    local lastEventFoundCombined=$lastEventFoundCombinedPY
+				fi
+				echo "$lastEventFoundCombined"
+			    fi              
+			}
+
+			#Compare if current channel differs from target channel
+			if [ "$targetChan" != "0" ] && [ "$currentChan" != "$targetChan" ]; then  
+
+			    #Select most current event  
+			    if [ ! -z "$lastRadarFoundLine" ]; then
+				lastRadarFoundCombined=$(Get_ChanChange_Time "$lastRadarFoundLine")
+			    else
+				lastRadarFoundCombined="0"
+			    fi
+			    if [ ! -z "$lastChanChangeLine" ]; then
+				lastCCFoundCombined=$(Get_ChanChange_Time "$lastChanChangeLine")
+			    else
+				lastCCFoundCombined="0"
+			    fi
+
+			    if [ "$lastRadarFoundCombined" -eq "0" ] && [ "$lastCCFoundCombined" -eq "0" ]; then
+				lastEventTime=""
+			    elif [ "$lastRadarFoundCombined" -ge "$lastCCFoundCombined" ]; then
+				lastEventTime=$lastRadarFoundCombined
+			    elif [ "$lastRadarFoundCombined" -lt "$lastCCFoundCombined" ]; then
+				lastEventTime=$lastCCFoundCombined          
+			    fi
+
+			    if [ ! -z "$lastEventTime" ]; then      
+				#Restart wireless if greater than 30 minutes from last radar detection or channel change event
+				currentTime30M=$(date +%s -d@"$(( `date +%s`-30*60))")
+				if [ "$lastEventTime" -ge "$currentTime30M" ]; then
+				    logger -st ChannelHog "[*] Channel (${currentChan}) can't switch back yet as still in Non-Occupancy Period."
+				else
+				    logger -st ChannelHog "[*] Channel has changed from ${targetChan} to ${currentChan}. Restarting WiFi."
+				    service restart_wireless
+				fi
+			    fi          
+			fi
 		else
 			echo "[i] $currentbandwidth Channel Width Detected - No Action Required"
 		fi
