@@ -31,5 +31,5 @@ channelhog
 In your favorite SSH Client;
 
 ```Shell
-mkdir -p /jffs/addons/channelhog && /usr/sbin/curl -s "https://raw.githubusercontent.com/Adamm00/ChannelHog/master/channelhog.sh" -o "/jffs/addons/channelhog/channelhog.sh" && chmod 755 /jffs/addons/channelhog/channelhog.sh && sh /jffs/addons/channelhog/channelhog.sh install
+mkdir -p /jffs/addons/channelhog && /usr/sbin/curl -s "https://raw.githubusercontent.com/Mikiya83/ChannelHog/master/channelhog.sh" -o "/jffs/addons/channelhog/channelhog.sh" && chmod 755 /jffs/addons/channelhog/channelhog.sh && sh /jffs/addons/channelhog/channelhog.sh install
 ```
