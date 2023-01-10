@@ -18,6 +18,7 @@
 botname="ChannelHogBOT"
 avatar="https://i.imgur.com/jZk12SL.png"
 channelhogcfg="/jffs/addons/channelhog/channelhog.cfg"
+targetbandwidth="80MHz"
 
 clear
 sed -n '2,16p' "$0"
@@ -187,7 +188,6 @@ case "$1" in
 		if [ -n "$port5ghz2" ]; then
 			currentbandwidth2="$(wl -i "$port5ghz2" assoc | grep -F "Chanspec" | awk '{print $5}')"
 		fi
-		targetbandwidth="160MHz"
 		if [ "$currentbandwidth1" != "$targetbandwidth" ]; then
 			if [ "$model" != "XT8" ]; then
 				restart5ghz1="true"
