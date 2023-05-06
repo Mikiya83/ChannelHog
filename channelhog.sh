@@ -203,6 +203,19 @@ case "$1" in
 		else
 			currentbandwidth="${currentbandwidth1} ${currentbandwidth2}"
 		fi
+		
+		#Get targeted and current WIFI channel
+		#Currently only checks $port5ghz1.
+
+		targetChanSpec="$(nvram get wl1_chanspec)"
+		targetChan=${targetChanSpec%/*}
+		currentChanSpec="$(wl -i $port5ghz1 chanspec | awk '{print $1}')"
+		currentChan=${currentChanSpec%/*}
+		#Compare if current channel differs from target channel
+		if [ "$targetChan" != "0" ] && [ "$currentChan" != "$targetChan" ]; then
+			restart5ghz1="true"
+			restartradio="5GHz-1 "
+		fi
 
 		if [ "$restart5ghz1" = "true" ] || [ "$restart5ghz2" = "true" ]; then
 			if [ "$enablediscord" = "true" ]; then
@@ -266,7 +279,7 @@ EOF
 			targetChan=${targetChanSpec%/*}
 			currentChanSpec="$(wl -i $port5ghz1 chanspec | awk '{print $1}')"
 			currentChan=${currentChanSpec%/*}
-
+			
 			#Nested Function to get event time from log file
 			Get_ChanChange_Time () {
 			    local lastEventFoundLine="$1"
