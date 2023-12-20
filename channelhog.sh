@@ -218,44 +218,7 @@ case "$1" in
 		fi
 
 		if [ "$restart5ghz1" = "true" ] || [ "$restart5ghz2" = "true" ]; then
-			if [ "$enablediscord" = "true" ]; then
-				curl -s -H "Content-Type: application/json" \
-				-X POST \
-				-d "$(cat <<EOF
-				{
-					"username": "$botname",
-					"avatar_url": "$avatar",
-					"content": "Channel Width Error Detected - Restarting 5GHz Radio @everyone",
-					"embeds": [{
-						"title": "$(nvram get model)",
-						"color": 15749200,
-						"url": "https://$(nvram get lan_ipaddr):$(nvram get https_lanport)",
-						"fields": [{
-								"name": "Current ${restartradio} Channel Number ${currentChan} with width",
-								"value": "$currentbandwidth",
-								"inline": true
-							},
-							{
-								"name": "Target ${restartradio} Channel Number ${targetChan} with width",
-								"value": "$targetbandwidth",
-								"inline": true
-							},
-							{
-								"name": "Uptime",
-								"value": "$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/) {d=$6;h=$8;m=$9} else {h=$6;m=$7}}} {print d+0,"days,",h+0,"hours,",m+0,"minutes."}')",
-								"inline": false
-							}
-						],
-						"footer": {
-							"text": "$(date)",
-							"icon_url": "$avatar"
-						}
-					}]
-				}
-EOF
-							)" "$webhookurl"
-			fi
-
+  
 			#Check log for 'Radar detected' and 'wl_chanspec_changed_action' before wifi is taken Up/Down.
 			lastRadarFoundLine="$(grep "Radar detected" /tmp/syslog.log | tail -1)"
 			lastChanChangeLine="$(grep "wl_chanspec_changed_action" /tmp/syslog.log | tail -1)"
@@ -348,6 +311,46 @@ EOF
 				else
 				    logger -st ChannelHog "[*] Channel has changed from ${targetChan} to ${currentChan}. Restarting WiFi."
 				    logger -p syslog.alert "[*] Channel has changed from ${targetChan} to ${currentChan}. Restarting WiFi."
+
+ 			            if [ "$enablediscord" = "true" ]; then
+				       curl -s -H "Content-Type: application/json" \
+				       -X POST \
+				       -d "$(cat <<EOF
+				       {
+					  "username": "$botname",
+					  "avatar_url": "$avatar",
+					  "content": "Channel Width Error Detected - Restarting 5GHz Radio @everyone",
+					  "embeds": [{
+						"title": "$(nvram get model)",
+						"color": 15749200,
+						"url": "https://$(nvram get lan_ipaddr):$(nvram get https_lanport)",
+						"fields": [{
+								"name": "Current ${restartradio} Channel Number ${currentChan} with width",
+								"value": "$currentbandwidth",
+								"inline": true
+							},
+							{
+								"name": "Target ${restartradio} Channel Number ${targetChan} with width",
+								"value": "$targetbandwidth",
+								"inline": true
+							},
+							{
+								"name": "Uptime",
+								"value": "$(uptime | awk -F'( |,|:)+' '{if ($7=="min") m=$6; else {if ($7~/^day/) {d=$6;h=$8;m=$9} else {h=$6;m=$7}}} {print d+0,"days,",h+0,"hours,",m+0,"minutes."}')",
+								"inline": false
+							}
+						],
+						"footer": {
+							"text": "$(date)",
+							"icon_url": "$avatar"
+						}
+					   }]
+				       }
+EOF
+							)" "$webhookurl"
+			            fi
+	       
+   				    # real restart
 				    service restart_wireless
 				fi
 			    fi          
