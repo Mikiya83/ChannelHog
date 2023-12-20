@@ -231,12 +231,12 @@ case "$1" in
 						"color": 15749200,
 						"url": "https://$(nvram get lan_ipaddr):$(nvram get https_lanport)",
 						"fields": [{
-								"name": "Current ${restartradio} Channel Width",
+								"name": "Current ${restartradio} Channel Number ${currentChan} with width",
 								"value": "$currentbandwidth",
 								"inline": true
 							},
 							{
-								"name": "Target ${restartradio} Channel Width",
+								"name": "Target ${restartradio} Channel Number ${targetChan} with width",
 								"value": "$targetbandwidth",
 								"inline": true
 							},
